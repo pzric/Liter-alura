@@ -6,8 +6,10 @@ import com.alurachallenge.Liter_alura.repository.ILibroRepository;
 import com.alurachallenge.Liter_alura.service.ConsumoAPI;
 import com.alurachallenge.Liter_alura.service.ConvierteDatos;
 
+import java.util.DoubleSummaryStatistics;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class Principal {
     private static final String URL_BASE = "https://gutendex.com/books/?search=";
@@ -21,7 +23,7 @@ public class Principal {
     private List<String> idiomas;
 
 
-    public Principal(ILibroRepository libroRepository, IAutorRepository autorRepository){
+    public Principal(ILibroRepository libroRepository, IAutorRepository autorRepository) {
         this.libroRepository = libroRepository;
         this.autorRepository = autorRepository;
     }
@@ -36,6 +38,9 @@ public class Principal {
                     3. Lista de autores registrados
                     4. Lista de autores vivos en un determinado año
                     5. Lista libros por idioma
+                    6. Estadistica de libros agregados
+                    7. Top 10 libros mas descargados
+                    8. Buscar autor registrado
                     0- Salir
                     ---------------------------------------------
                     Selecciona una opcion para continuar
@@ -61,6 +66,15 @@ public class Principal {
                     case 5:
                         listaLibrosPorIdioma();
                         break;
+                    case 6:
+                        estadisticaLibrosAgregados();
+                        break;
+                    case 7:
+                        top10LibrosDescargados();
+                        break;
+                    case 8:
+                        buscarAutorAgregado();
+                        break;
                     case 0:
                         System.out.println("Cerrando la aplicacion");
                         break;
@@ -74,7 +88,7 @@ public class Principal {
         }
     }
 
-    private void buscarLibro(){
+    private void buscarLibro() {
         System.out.println("Ingrese el nombre del libro que desea agregar:");
         var tituloLibro = teclado.nextLine();
         var json = consumoAPI.obtenerDatos(URL_BASE + tituloLibro.replace(" ", "+"));
@@ -96,11 +110,11 @@ public class Principal {
                 System.out.println(libro);
                 System.out.println("Libro agregado con exito");
 
-            }else {
+            } else {
                 System.out.printf("---------------------------------------------\n");
                 System.out.println("El libro ya se encuntra registrado");
             }
-        }catch (NullPointerException e) {
+        } catch (NullPointerException e) {
             System.out.printf("---------------------------------------------\n");
             System.out.println("Libro no encontrado");
         }
@@ -117,10 +131,14 @@ public class Principal {
     }
 
     private void listaAutoresVivos() {
-        System.out.println("Indica el año limite: ");
+        System.out.println("Indica el año: ");
         int fecha = teclado.nextInt();
         autores = autorRepository.autoresPorFechaDeMuerte(fecha);
-        autores.stream().forEach(System.out::println);
+        if (autores.isEmpty()) {
+            System.out.println("Ningun autor vivo en determinado año ");
+        } else {
+            autores.stream().forEach(System.out::println);
+        }
     }
 
     public void listaLibrosPorIdioma() {
@@ -133,8 +151,33 @@ public class Principal {
         libros = libroRepository.librosPoridioma(idiomaSeleccionado);
         if (libros.isEmpty()) {
             System.out.println("Opcion no valida");
-        }else {
+        } else {
             libros.stream().forEach(System.out::println);
+        }
+    }
+
+    public void estadisticaLibrosAgregados() {
+        DoubleSummaryStatistics estadictica = libroRepository.findAll().stream()
+                .filter(l -> l.getNumeroDeDescargas() > 0)
+                .collect(Collectors.summarizingDouble(Libro::getNumeroDeDescargas));
+        System.out.println("Cantidad media de descargas: " + estadictica.getAverage());
+        System.out.println("Cantidad maxima de descargas: " + estadictica.getMax());
+        System.out.println("Cantidad minima de descargas: " + estadictica.getMin());
+        System.out.println("Cantidad de resgistros evaluados para calcular las estadisticas: " + estadictica.getCount());
+    }
+
+    public void top10LibrosDescargados() {
+        libroRepository.findTop10ByOrderByNumeroDeDescargasDesc().forEach(System.out::println);
+    }
+
+    public void buscarAutorAgregado() {
+        System.out.println("Nombre del autor que deseas buscar: ");
+        var nombreAutor = teclado.nextLine();
+        var autor = autorRepository.findByNombre(nombreAutor);
+        if (autor.isEmpty()) {
+            System.out.println("El autor no se encuentra registrado");
+        } else {
+            System.out.println(autor);
         }
     }
 }

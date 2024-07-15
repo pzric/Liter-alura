@@ -1,5 +1,6 @@
 package com.alurachallenge.Liter_alura.repository;
 
+import com.alurachallenge.Liter_alura.model.DatosLibros;
 import com.alurachallenge.Liter_alura.model.Libro;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,4 +16,6 @@ public interface ILibroRepository extends JpaRepository<Libro, Long> {
 
     @Query("SELECT l FROM Libro l WHERE l.idioma = :idiomaSeleccionado")
     List<Libro> librosPoridioma(String idiomaSeleccionado);
+
+    List<Libro> findTop10ByOrderByNumeroDeDescargasDesc();
 }
